@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ach_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: supersecure_db_password_2026
+      POSTGRES_DB: aicreatorhub
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ach_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ach_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - ach_network
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/app.Dockerfile
+    container_name: ach_api
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:supersecure_db_password_2026@postgres:5432/aicreatorhub
+      - REDIS_URL=redis://redis:6379/0
+      - TELEGRAM_BOT_TOKEN=7716235491:AAH_FakeTokenForStructureValidation_ACH
+      - JWT_SECRET_KEY=991823aBcDeFgHiJkLmNoPqRsTuVwXyZ_SUPER_SECURE_TOKEN_2026
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ach_network
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  ach_network:
+    driver: bridge
